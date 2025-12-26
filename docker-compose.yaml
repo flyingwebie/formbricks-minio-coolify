@@ -169,6 +169,8 @@ services:
       - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL:-}
       - MINIO_ROOT_USER=$SERVICE_USER_MINIO
       - MINIO_ROOT_PASSWORD=$SERVICE_PASSWORD_MINIO
+      # CORS Configuration - Allow all origins (or set specific origins)
+      - MINIO_API_CORS_ALLOW_ORIGIN=${MINIO_CORS_ORIGINS:-*}
     volumes:
       - minio-data:/data
     healthcheck:
@@ -195,11 +197,36 @@ services:
         # Create bucket if it doesn't exist
         mc mb myminio/$${BUCKET_NAME} --ignore-existing
         
-        # Set bucket policy to allow public read for uploads/public path
-        mc anonymous set download myminio/$${BUCKET_NAME}/uploads/public
+        # Set bucket policy to allow public read/download
+        mc anonymous set download myminio/$${BUCKET_NAME}
+        
+        # Create a public read policy for the bucket
+        cat > /tmp/bucket-policy.json << 'POLICY'
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {"AWS": ["*"]},
+              "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+              "Resource": ["arn:aws:s3:::${BUCKET_NAME}/*"]
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {"AWS": ["*"]},
+              "Action": ["s3:ListBucket"],
+              "Resource": ["arn:aws:s3:::${BUCKET_NAME}"]
+            }
+          ]
+        }
+        POLICY
+        
+        # Apply bucket policy (substitute bucket name)
+        sed -i "s/\$${BUCKET_NAME}/$${BUCKET_NAME}/g" /tmp/bucket-policy.json
+        mc anonymous set-json /tmp/bucket-policy.json myminio/$${BUCKET_NAME}
         
         echo "MinIO initialization complete!"
-        echo "Bucket: $${BUCKET_NAME} created successfully"
+        echo "Bucket: $${BUCKET_NAME} created with public access"
     environment:
       - MINIO_ROOT_USER=$SERVICE_USER_MINIO
       - MINIO_ROOT_PASSWORD=$SERVICE_PASSWORD_MINIO
