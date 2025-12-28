@@ -4,7 +4,7 @@ Deploy [Formbricks](https://formbricks.com) with self-hosted S3 storage (MinIO) 
 
 ## 📺 Video Tutorial
 
-[![Formbricks + MinIO Setup](https://img.youtube.com/vi/PLACEHOLDER/maxresdefault.jpg)](https://www.youtube.com/watch?v=PLACEHOLDER)
+[![Formbricks + MinIO Setup](https://img.youtube.com/vi/ZrvlLKe4TTA/maxresdefault.jpg)](https://youtu.be/ZrvlLKe4TTA)
 
 ---
 
