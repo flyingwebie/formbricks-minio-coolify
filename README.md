@@ -1,74 +1,35 @@
 # Formbricks + MinIO for Coolify
 
-Deploy [Formbricks](https://formbricks.com) with self-hosted S3-compatible storage (MinIO) on [Coolify](https://coolify.io).
+Deploy [Formbricks](https://formbricks.com) with self-hosted S3 storage (MinIO) on [Coolify](https://coolify.io).
 
-## Overview
+## 📺 Video Tutorial
 
-This Docker Compose configuration provides a complete Formbricks setup with:
+[![Formbricks + MinIO Setup](https://img.youtube.com/vi/PLACEHOLDER/maxresdefault.jpg)](https://www.youtube.com/watch?v=PLACEHOLDER)
 
-- **Formbricks** - Open source experience management platform
-- **PostgreSQL** (with pgvector) - Primary database
-- **Redis** - Required for caching, rate limiting, and audit logging
-- **MinIO** - Self-hosted S3-compatible object storage for file uploads
-
-## Prerequisites
-
-- A running [Coolify](https://coolify.io) instance
-- Three subdomains pointing to your Coolify server:
-  - `formbricks.yourdomain.com` - Main application
-  - `files.yourdomain.com` - MinIO S3 API endpoint
-  - `minio-console.yourdomain.com` - MinIO admin console (optional)
-- SMTP credentials for transactional emails
+---
 
 ## Quick Start
 
-### 1. Create a New Service in Coolify
+### 1. Create Service in Coolify
 
-1. Go to your Coolify dashboard
-2. Create a new **Docker Compose** service
-3. Paste the contents of `docker-compose.yaml`
+Create a new **Docker Compose** service and paste `docker-compose.yaml`.
 
 ### 2. Configure Domains
 
-In Coolify, configure the following domains for each service:
+| Service | Port | Variable |
+|---------|------|----------|
+| formbricks | 3000 | `SERVICE_URL_FORMBRICKS` |
+| minio | 9000 | `MINIO_SERVER_URL` (S3 API) |
+| minio | 9001 | `MINIO_BROWSER_REDIRECT_URL` (Console) |
 
-| Service | Domain | Port |
-|---------|--------|------|
-| formbricks | `formbricks.yourdomain.com` | 3000 |
-| minio | `files.yourdomain.com` | 9000 |
-| minio (console) | `minio-console.yourdomain.com` | 9001 |
-
-### 3. Set Required Environment Variables
-
-Before deploying, you **must** configure these environment variables in Coolify's UI:
-
-#### Core URLs (Required)
+### 3. Set Environment Variables
 
 ```env
-# Your Formbricks domain with https://
-WEBAPP_URL=https://formbricks.yourdomain.com
-NEXTAUTH_URL=https://formbricks.yourdomain.com
-
-# MinIO S3 endpoint
-S3_ENDPOINT_URL=https://files.yourdomain.com
-
-# MinIO configuration
+# MinIO URLs
 MINIO_SERVER_URL=https://files.yourdomain.com
-MINIO_BROWSER_REDIRECT_URL=https://minio-console.yourdomain.com
-```
+MINIO_BROWSER_REDIRECT_URL=https://minio.yourdomain.com
 
-#### SMTP Configuration (Required)
-
-⚠️ **SMTP is mandatory** for Formbricks to function properly. Email is required for:
-- User registration and verification
-- Password resets
-- Team invitations
-- Survey response notifications
-
-We recommend using one of these transactional email services:
-
-**[Resend](https://resend.com)** (Recommended)
-```env
+# SMTP (required)
 MAIL_FROM=noreply@yourdomain.com
 SMTP_HOST=smtp.resend.com
 SMTP_PORT=465
@@ -77,260 +38,50 @@ SMTP_PASSWORD=re_xxxxxxxxxxxx
 SMTP_SECURE_ENABLED=1
 ```
 
-**[useSend](https://usesend.com)**
-```env
-MAIL_FROM=noreply@yourdomain.com
-SMTP_HOST=smtp.usesend.com
-SMTP_PORT=587
-SMTP_USER=your_usesend_username
-SMTP_PASSWORD=your_usesend_password
-SMTP_SECURE_ENABLED=0
-```
-
-**Other providers** (SendGrid, Mailgun, Amazon SES, etc.)
-```env
-MAIL_FROM=noreply@yourdomain.com
-SMTP_HOST=your_smtp_host
-SMTP_PORT=587
-SMTP_USER=your_smtp_user
-SMTP_PASSWORD=your_smtp_password
-SMTP_SECURE_ENABLED=0
-```
-
 ### 4. Deploy
 
-Click **Deploy** in Coolify. The services will start in the following order:
-1. PostgreSQL & Redis (databases)
-2. MinIO (object storage)
-3. MinIO Init (creates bucket)
-4. Formbricks (main application)
+Click **Deploy** in Coolify.
 
-## Environment Variables Reference
+### 5. ⚠️ Create MinIO Bucket (Required!)
 
-### Required Variables
+> **File uploads won't work without this step!**
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `WEBAPP_URL` | Full URL of your Formbricks instance | `https://formbricks.yourdomain.com` |
-| `NEXTAUTH_URL` | Same as WEBAPP_URL | `https://formbricks.yourdomain.com` |
-| `S3_ENDPOINT_URL` | MinIO S3 API endpoint | `https://files.yourdomain.com` |
-| `MINIO_SERVER_URL` | MinIO server URL | `https://files.yourdomain.com` |
-| `MINIO_BROWSER_REDIRECT_URL` | MinIO console URL | `https://minio-console.yourdomain.com` |
-| `MAIL_FROM` | Sender email address | `noreply@yourdomain.com` |
-| `SMTP_HOST` | SMTP server hostname | `smtp.resend.com` |
-| `SMTP_PORT` | SMTP server port | `587` or `465` |
-| `SMTP_USER` | SMTP username | varies by provider |
-| `SMTP_PASSWORD` | SMTP password/API key | varies by provider |
+1. Open MinIO Console (`MINIO_BROWSER_REDIRECT_URL`)
+2. Login with `SERVICE_USER_MINIO` / `SERVICE_PASSWORD_MINIO` (find in Coolify)
+3. **Buckets** → **Create Bucket** → Name: `formbricks-uploads`
 
-### Auto-Generated Variables (Coolify Magic)
+**Bucket naming:** Use only lowercase, numbers, hyphens. No `_`, `&`, `%`.
 
-These are automatically generated by Coolify - do not set manually:
+### 6. Access Formbricks
 
-| Variable | Description |
-|----------|-------------|
-| `$SERVICE_USER_POSTGRESQL` | PostgreSQL username |
-| `$SERVICE_PASSWORD_POSTGRESQL` | PostgreSQL password |
-| `$SERVICE_USER_MINIO` | MinIO root username |
-| `$SERVICE_PASSWORD_MINIO` | MinIO root password |
-| `$SERVICE_BASE64_NEXTAUTH` | NextAuth secret key |
-| `$SERVICE_BASE64_ENCRYPTION` | Encryption key |
-| `$SERVICE_BASE64_CRON` | Cron secret |
+Open your Formbricks URL and complete setup.
 
-### Optional Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `POSTGRESQL_DATABASE` | `formbricks` | Database name |
-| `S3_BUCKET_NAME` | `formbricks-uploads` | S3 bucket name |
-| `S3_REGION` | `us-east-1` | S3 region (can be any value for MinIO) |
-| `EMAIL_VERIFICATION_DISABLED` | `1` | Disable email verification (set to `0` for production) |
-| `PASSWORD_RESET_DISABLED` | `1` | Disable password reset (set to `0` for production) |
-| `INVITE_DISABLED` | `0` | Disable team invitations |
-| `RATE_LIMITING_DISABLED` | `0` | Disable rate limiting |
-| `ENTERPRISE_LICENSE_KEY` | - | Formbricks Enterprise license |
-
-### OAuth Providers (Optional)
-
-```env
-# GitHub
-GITHUB_ID=your_github_client_id
-GITHUB_SECRET=your_github_client_secret
-
-# Google
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# Azure AD
-AZUREAD_CLIENT_ID=your_azure_client_id
-AZUREAD_CLIENT_SECRET=your_azure_client_secret
-AZUREAD_TENANT_ID=your_azure_tenant_id
-
-# Generic OIDC
-OIDC_CLIENT_ID=your_oidc_client_id
-OIDC_CLIENT_SECRET=your_oidc_client_secret
-OIDC_ISSUER=https://your-oidc-provider.com
-OIDC_DISPLAY_NAME=Your Provider Name
-```
-
-### Integrations (Optional)
-
-```env
-# Unsplash (for survey images)
-UNSPLASH_ACCESS_KEY=your_unsplash_key
-
-# Notion
-NOTION_OAUTH_CLIENT_ID=your_notion_client_id
-NOTION_OAUTH_CLIENT_SECRET=your_notion_client_secret
-
-# Google Sheets
-GOOGLE_SHEETS_CLIENT_ID=your_sheets_client_id
-GOOGLE_SHEETS_CLIENT_SECRET=your_sheets_client_secret
-GOOGLE_SHEETS_REDIRECT_URL=https://formbricks.yourdomain.com/api/google-sheet/callback
-
-# Airtable
-AIRTABLE_CLIENT_ID=your_airtable_client_id
-
-# Slack
-SLACK_CLIENT_ID=your_slack_client_id
-SLACK_CLIENT_SECRET=your_slack_client_secret
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Coolify                               │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                    Traefik                           │    │
-│  │         (SSL termination & reverse proxy)           │    │
-│  └──────┬──────────────┬──────────────┬───────────────┘    │
-│         │              │              │                      │
-│         ▼              ▼              ▼                      │
-│  ┌────────────┐ ┌────────────┐ ┌────────────┐              │
-│  │ Formbricks │ │   MinIO    │ │   MinIO    │              │
-│  │   :3000    │ │   :9000    │ │   :9001    │              │
-│  │            │ │  (S3 API)  │ │ (Console)  │              │
-│  └─────┬──────┘ └────────────┘ └────────────┘              │
-│        │              │                                      │
-│        │              ▼                                      │
-│        │       ┌────────────┐                               │
-│        │       │   MinIO    │                               │
-│        │       │   Data     │                               │
-│        │       └────────────┘                               │
-│        │                                                     │
-│        ▼                                                     │
-│  ┌────────────┐    ┌────────────┐                          │
-│  │ PostgreSQL │    │   Redis    │                          │
-│  │   :5432    │    │   :6379    │                          │
-│  └────────────┘    └────────────┘                          │
-└─────────────────────────────────────────────────────────────┘
-```
+---
 
 ## Services
 
-| Service | Image | Purpose |
-|---------|-------|---------|
-| `formbricks` | `ghcr.io/formbricks/formbricks:latest` | Main application |
-| `postgresql` | `pgvector/pgvector:pg16` | Database with vector support |
-| `redis` | `redis:7-alpine` | Caching, rate limiting, audit logs |
-| `minio` | `ghcr.io/coollabsio/minio:latest` | S3-compatible object storage |
-| `minio-init` | `ghcr.io/coollabsio/minio:latest` | One-time bucket initialization |
+| Service | Image |
+|---------|-------|
+| formbricks | `ghcr.io/formbricks/formbricks:latest` |
+| postgresql | `pgvector/pgvector:pg16` |
+| valkey | `valkey/valkey:8-alpine` |
+| minio | `ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z` |
 
-## Volumes
-
-| Volume | Purpose |
-|--------|---------|
-| `formbricks-uploads` | Temporary file uploads |
-| `formbricks-postgresql-data` | PostgreSQL data |
-| `redis-data` | Redis persistence |
-| `minio-data` | MinIO object storage |
-
-## File Uploads
-
-This configuration enables all Formbricks file upload features:
-
-- ✅ Survey images (questions, backgrounds, logos)
-- ✅ File Upload question type
-- ✅ Picture Selection question type
-- ✅ Project logos and branding
-- ✅ Organization logos in emails
-
-Files are stored in MinIO with the following structure:
-```
-formbricks-uploads/
-├── uploads/
-│   ├── public/     # Publicly accessible files
-│   └── private/    # Protected files
-```
+---
 
 ## Troubleshooting
 
-### "Invalid environment variables" error
+| Issue | Solution |
+|-------|----------|
+| File uploads fail | Create bucket `formbricks-uploads` in MinIO Console |
+| CORS errors | Set `MINIO_API_CORS_ALLOW_ORIGIN=*` |
+| Invalid URL errors | Ensure URLs include `https://` |
+| Redis required | Check Valkey container is running |
 
-Ensure all required URLs are set with the `https://` scheme:
-```env
-WEBAPP_URL=https://formbricks.yourdomain.com    # ✅ Correct
-WEBAPP_URL=formbricks.yourdomain.com            # ❌ Wrong
-```
-
-### "REDIS_URL is required" error
-
-Redis is now mandatory. This compose file includes Redis automatically. If you see this error, ensure the Redis service is running and healthy.
-
-### MinIO "unexpected scheme found" error
-
-Set `MINIO_BROWSER_REDIRECT_URL` with a full URL:
-```env
-MINIO_BROWSER_REDIRECT_URL=https://minio-console.yourdomain.com  # ✅ Correct
-MINIO_BROWSER_REDIRECT_URL=minio-console.yourdomain.com          # ❌ Wrong
-```
-
-### Files not uploading
-
-1. Verify MinIO is accessible at your `S3_ENDPOINT_URL`
-2. Check that the bucket was created (check `minio-init` logs)
-3. Ensure `S3_FORCE_PATH_STYLE=1` is set
-
-### Cannot access MinIO console
-
-1. Verify the domain `minio-console.yourdomain.com` points to your server
-2. Check that port 9001 is exposed in Coolify
-3. Ensure `MINIO_BROWSER_REDIRECT_URL` is correctly set
-
-### Email not sending
-
-1. Verify SMTP credentials are correct
-2. Check that `MAIL_FROM` uses a verified domain/sender
-3. Test with a simple provider like Resend first
-4. Check Formbricks container logs for SMTP errors
-
-## Production Recommendations
-
-1. **Enable email verification**
-   ```env
-   EMAIL_VERIFICATION_DISABLED=0
-   PASSWORD_RESET_DISABLED=0
-   ```
-
-2. **Configure OAuth** for easier user onboarding
-
-3. **Set up backups** for PostgreSQL and MinIO volumes
-
-4. **Monitor logs** in Coolify for any issues
-
-5. **Use a CDN** (optional) for serving uploaded files
+---
 
 ## Resources
 
-- [Formbricks Documentation](https://formbricks.com/docs)
-- [Formbricks Self-Hosting Guide](https://formbricks.com/docs/self-hosting)
-- [Formbricks File Uploads Configuration](https://formbricks.com/docs/self-hosting/configuration/file-uploads)
-- [Coolify Documentation](https://coolify.io/docs)
-- [MinIO Documentation](https://min.io/docs/minio/)
-
-## License
-
-This Docker Compose configuration is provided as-is. 
-
-- Formbricks is licensed under [AGPL-3.0](https://github.com/formbricks/formbricks/blob/main/LICENSE)
-- MinIO is licensed under [AGPL-3.0](https://github.com/minio/minio/blob/master/LICENSE)
+- [Formbricks Docs](https://formbricks.com/docs)
+- [Coolify Docs](https://coolify.io/docs)
+- [MinIO Docs](https://min.io/docs/minio/)
